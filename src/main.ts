@@ -25,6 +25,13 @@ const renderPlease = (elementId: string, xmlScore: string) => {
 
 const embedElementId = 'osmdCanvas';
 
+(async () => {
+    const resourceFetch = await fetch('/resources/drums-part.musicxml');
+    const xmlScore = await resourceFetch.text();
+    renderPlease(embedElementId, xmlScore);
+})().then();
+
+/*
 document.querySelector<HTMLDivElement>('#files')!.addEventListener("change", (evt) => {
     // @ts-ignore
     const file = evt.target?.files[0];
@@ -36,3 +43,5 @@ document.querySelector<HTMLDivElement>('#files')!.addEventListener("change", (ev
     };
     reader.readAsText(file);
 }, false);
+*/
+
