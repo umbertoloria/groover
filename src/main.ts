@@ -1,5 +1,30 @@
 import './style.css'
 
+const renderPlease = (xmlScore: string) => {
+    console.log("asdf");
+
+    // @ts-ignore
+    var osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay("osmdCanvas", {
+        // set options here
+        backend: "svg",
+        drawFromMeasureNumber: 1,
+        drawUpToMeasureNumber: Number.MAX_SAFE_INTEGER // draw all measures, up to the end of the sample
+    });
+    osmd
+        .load(xmlScore)
+        .then(
+            function () {
+                // @ts-ignore
+                window.osmd = osmd; // give access to osmd object in Browser console, e.g. for osmd.setOptions()
+                //console.log("e.target.result: " + e.target.result);
+                osmd.render();
+                // osmd.cursor.show(); // this would show the cursor on the first note
+                // osmd.cursor.next(); // advance the cursor one note
+            }
+        );
+
+};
+
 document.querySelector<HTMLDivElement>('#files')!.addEventListener("change", (evt) => {
     // @ts-ignore
     const realFiles = evt.target?.files;
@@ -18,25 +43,8 @@ document.querySelector<HTMLDivElement>('#files')!.addEventListener("change", (ev
     var reader = new FileReader();
 
     reader.onload = function (e) {
-        // @ts-ignore
-        var osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay("osmdCanvas", {
-            // set options here
-            backend: "svg",
-            drawFromMeasureNumber: 1,
-            drawUpToMeasureNumber: Number.MAX_SAFE_INTEGER // draw all measures, up to the end of the sample
-        });
-        osmd
-            .load(e.target?.result)
-            .then(
-                function () {
-                    // @ts-ignore
-                    window.osmd = osmd; // give access to osmd object in Browser console, e.g. for osmd.setOptions()
-                    //console.log("e.target.result: " + e.target.result);
-                    osmd.render();
-                    // osmd.cursor.show(); // this would show the cursor on the first note
-                    // osmd.cursor.next(); // advance the cursor one note
-                }
-            );
+        const xmlScore = e.target?.result as string;
+        renderPlease(xmlScore);
     };
     if (file.name.match('.*\.mxl')) {
         // have to read as binary, otherwise JSZip will throw ("corrupted zip: missing 37 bytes" or similar)
