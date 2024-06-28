@@ -1,61 +1,71 @@
+import {extractNotesOrRests} from './extract-notes-or-rests.ts';
+
 export async function createSheet(): Promise<string> {
 
+    const hhLayer: string = '< - - > < - - > ';
+    const snLayer: string = '    o       o   ';
+    const kkLayer: string = 'o       o       ';
+
     // Generate XML Notes
-    const xmlFirstVoiceNotes: string[] = [
+    const xmlFirstVoiceNotes: string[] = [];
+    const xmlSecondVoiceNotes: string[] = [];
 
-        // First 2/4
-        createHHNote({
-            grouping: 'begin',
-        }),
-        createHHNote({
-            grouping: 'continue',
-        }),
-        createHHNote({
-            grouping: 'continue',
-        }),
-        createSnareNoteBelowHH(),
-        createHHNote({
-            grouping: 'end',
-        }),
-
-        // Second 2/4
-        createHHNote({
-            grouping: 'begin',
-        }),
-        createHHNote({
-            grouping: 'continue',
-        }),
-        createHHNote({
-            grouping: 'continue',
-        }),
-        createSnareNoteBelowHH(),
-        createHHNote({
-            grouping: 'end',
-        }),
-
-    ];
-
-    const xmlSecondVoiceNotes: string[] = [
-
-        // First 2/4
-        createKickNote({
-            i8th: 2,
-        }),
-        createKickNote({
-            i8th: 2,
-            rest: true,
-        }),
-
-        // Second 2/4
-        createKickNote({
-            i8th: 2,
-        }),
-        createKickNote({
-            i8th: 2,
-            rest: true,
-        }),
-
-    ];
+    const hhStack = extractNotesOrRests(hhLayer, snLayer, (symbol1, symbol2) => {
+        if (symbol1 === '<') {
+            return {
+                grouping: 'begin',
+                snare: symbol2,
+            };
+        }
+        if (symbol1 === '-') {
+            return {
+                grouping: 'continue',
+                snare: symbol2,
+            };
+        }
+        if (symbol1 === '>') {
+            return {
+                grouping: 'end',
+                snare: symbol2,
+            };
+        }
+        return undefined;
+    });
+    for (const item of hhStack.items) {
+        xmlFirstVoiceNotes.push(
+            createHHNote({
+                grouping: (() => {
+                    if (item.type === 'note') {
+                        if (
+                            item.data?.grouping === 'begin'
+                            || item.data?.grouping === 'continue'
+                            || item.data?.grouping === 'end'
+                        ) {
+                            return item.data.grouping;
+                        }
+                    }
+                    return undefined;
+                })(),
+                rest: item.type === 'rest',
+            })
+        );
+        if (item.level2) {
+            xmlFirstVoiceNotes.push(
+                createSnareNoteBelowHH({
+                    ghost: item.data?.snare === '.',
+                })
+            );
+        }
+    }
+    const kkStack = extractNotesOrRests(kkLayer);
+    for (const item of kkStack.items) {
+        xmlSecondVoiceNotes.push(
+            createKickNote({
+                i8th: item.num16 / 2, // TODO: What if it was a 16th hit?
+                rest: item.type === 'rest',
+            })
+        );
+    }
 
     // Fetch XML Template
     const xmlTemplate = await fetchDrumsTemplate();
@@ -81,6 +91,7 @@ const createHHNote = (args: {
         'begin'
         | 'continue'
         | 'end';
+    rest?: boolean;
 }) => {
     return createNote({
         note: {
@@ -91,16 +102,21 @@ const createHHNote = (args: {
         instrument: 'hh',
         voice: 1,
         grouping: args.grouping,
+        rest: args.rest,
     });
 }
 
-const createSnareNoteBelowHH = () => createNote({
+const createSnareNoteBelowHH = (args: {
+    ghost?: boolean;
+}) => createNote({
     note: {
         step: 'C',
         octave: 5,
     },
     duration: 1,
-    instrument: 'snare',
+    instrument: args.ghost
+        ? 'snare-ghost'
+        : 'snare',
     voice: 1,
     chord: true,
 });
@@ -108,18 +124,16 @@ const createSnareNoteBelowHH = () => createNote({
 const createKickNote = (args: {
     i8th: number;
     rest?: boolean;
-}) => {
-    return createNote({
-        note: {
-            step: 'F',
-            octave: 4,
-        },
-        duration: args.i8th,
-        instrument: 'kick',
-        voice: 2,
-        rest: args.rest,
-    });
-}
+}) => createNote({
+    note: {
+        step: 'F',
+        octave: 4,
+    },
+    duration: args.i8th,
+    instrument: 'kick',
+    voice: 2,
+    rest: args.rest,
+})
 
 // Note generic builder
 const createNote = (args: {
@@ -170,6 +184,9 @@ const createNote = (args: {
         (() => {
             if (args.instrument === 'hh') {
                 return '<notehead>x</notehead>';
+            }
+            if (args.instrument === 'snare-ghost') {
+                return '<notehead>diamond</notehead>';
             }
             return '';
         })()}
