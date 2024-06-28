@@ -1,4 +1,5 @@
 import './style.css'
+import {fetchDrumsFromPublic} from './builder.ts';
 
 const renderPlease = (elementId: string, xmlScore: string) => {
     // @ts-ignore
@@ -26,9 +27,12 @@ const renderPlease = (elementId: string, xmlScore: string) => {
 const embedElementId = 'osmdCanvas';
 
 (async () => {
-    const resourceFetch = await fetch('/resources/drums-part.musicxml');
-    const xmlScore = await resourceFetch.text();
+
+    const xmlScore = await fetchDrumsFromPublic('mini-drums.musicxml')
+
+    // Render
     renderPlease(embedElementId, xmlScore);
+
 })().then();
 
 /*
@@ -44,4 +48,3 @@ document.querySelector<HTMLDivElement>('#files')!.addEventListener("change", (ev
     reader.readAsText(file);
 }, false);
 */
-
