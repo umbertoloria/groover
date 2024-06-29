@@ -12,8 +12,8 @@ const createEmptyWindowOf16ths = (): WindowOf16ths => ({
 export const buildWindowsOf16ths = (notesStacksList: NotesStack[]) => {
     const windows: WindowOf16ths[] = [];
     for (const notesStack of notesStacksList) {
-        if (notesStack.num16 === 4) {
-            // Is a quarter, so don't group.
+        if (notesStack.num16 > 2) {
+            // It's a quarter or a dotted eighth, so don't group.
             windows.push(undefined);
             continue;
         }
@@ -36,6 +36,15 @@ export const buildWindowsOf16ths = (notesStacksList: NotesStack[]) => {
         lastGr = windows[windows.length - 1] as (WindowOf16ths & object); // Sure is not "undefined" now.
         lastGr.num16ths += notesStack.num16;
         lastGr.countItems++;
+    }
+    if (windows.length) {
+        const lastWindow = windows[windows.length - 1];
+        if (lastWindow) {
+            if (lastWindow.countItems === 1) {
+                windows.splice(windows.length - 1);
+                windows.push(undefined)
+            }
+        }
     }
     return windows;
 }
@@ -64,6 +73,9 @@ export const createIteratorUponWindowsOf16ths = (windowsOf16ths: WindowOf16ths[]
     },
     isCurrentWindowContainingTheLastItem() {
         return this.remainingCountItemsFromCurrentWindow === 1;
+    },
+    isCurrentWindowUndefined() {
+        return this.currentWindow === undefined;
     },
     pickNextWindow() {
         this.remainingCountItemsFromCurrentWindow--;

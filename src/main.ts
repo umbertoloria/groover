@@ -9,6 +9,7 @@ import {
 } from './drums-patterns/snare-patterns.ts';
 import {
     KICK_PATTERN_24_I____I____,
+    KICK_PATTERN_24_I____I___K,
     KICK_PATTERN_24_IK___I____,
     KICK_PATTERN_24_IK_K_I____,
 } from './drums-patterns/kick-patterns.ts';
@@ -50,7 +51,7 @@ const embedElementId = 'osmdCanvas';
             },
         }),
         kickPattern: KICK_PATTERN_24_IK___I____ + KICK_PATTERN_24_I____I____
-            + KICK_PATTERN_24_IK_K_I____ + KICK_PATTERN_24_I____I____,
+            + KICK_PATTERN_24_IK_K_I____ + KICK_PATTERN_24_I____I___K,
     });
 
     // Render

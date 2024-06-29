@@ -75,18 +75,21 @@ export const createSheet = async ({topPattern, snarePattern, kickPattern}: ICrea
     const kkStacks = getNotesStacksList([kickPattern]);
     const kkWindowsOf16ths = createIteratorUponWindowsOf16ths(buildWindowsOf16ths(kkStacks));
     kkWindowsOf16ths.pickFirstWindowIfExists();
-    for (const item of kkStacks) {
+    for (const notesStack of kkStacks) {
 
         const grouping: undefined | 'begin' | 'continue' | 'end' = (() => {
-            if (item.num16 === 4) {
+            if (notesStack.num16 === 4) {
                 return undefined;
             }
-            if (item.type === 'note') {
+            if (notesStack.type === 'note') {
                 if (kkWindowsOf16ths.hasCurrentWindowJustStarted()) {
                     return 'begin';
                 }
                 if (kkWindowsOf16ths.isCurrentWindowContainingTheLastItem()) {
                     return 'end';
+                }
+                if (kkWindowsOf16ths.isCurrentWindowUndefined()) {
+                    return undefined;
                 }
                 return 'continue';
             }
@@ -95,9 +98,9 @@ export const createSheet = async ({topPattern, snarePattern, kickPattern}: ICrea
 
         xmlSecondVoiceNotes.push(
             createKickNote({
-                i8th: item.num16 / 2, // TODO: What if it was a 16th hit?
+                i8th: notesStack.num16 / 2,
                 grouping,
-                rest: item.type === 'rest',
+                rest: notesStack.type === 'rest',
             })
         );
 
@@ -200,7 +203,7 @@ const createNote = (args: {
         step: string;
         octave: number;
     };
-    duration: number;
+    duration: number; // In 1/8s.
     instrument:
         'hh'
         | 'snare'
@@ -218,6 +221,7 @@ const createNote = (args: {
         <note>
             ${args.rest ? '<rest/>' : ''}
             ${args.chord ? '<chord/>' : ''}
+            ${args.duration === 1.5 ? '<dot/>' : ''}
             <unpitched>
                 <display-step>${args.note.step}</display-step>
                 <display-octave>${args.note.octave}</display-octave>
@@ -231,6 +235,10 @@ const createNote = (args: {
                 return '16th';
             }
             if (args.duration === 1) {
+                return 'eighth';
+            }
+            if (args.duration === 1.5) {
+                // It's a dotted-eighth.
                 return 'eighth';
             }
             // Other dimensions of 1/8s not supported.
