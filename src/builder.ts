@@ -14,9 +14,9 @@ export const createSheet = async ({topPattern, snarePattern, kickPattern}: ICrea
     const xmlSecondVoiceNotes: string[] = [];
 
     const hhNotesAndRests = extractNotesOrRests([topPattern, snarePattern]);
-    const iteratorOfGroupsOfNotes = createIteratorUponGroupsOfNotes(buildGroupsOfNotes(hhNotesAndRests));
-    iteratorOfGroupsOfNotes.pickFirstGroupIfExists();
 
+    const hhAndSnIteratorOfGroupsOfNotes = createIteratorUponGroupsOfNotes(buildGroupsOfNotes(hhNotesAndRests));
+    hhAndSnIteratorOfGroupsOfNotes.pickFirstGroupIfExists();
     for (const item of hhNotesAndRests) {
         const hhSymbol = item.symbols[0];
         const snSymbol = item.symbols[1];
@@ -26,10 +26,10 @@ export const createSheet = async ({topPattern, snarePattern, kickPattern}: ICrea
                 return undefined;
             }
             if (item.type === 'note') {
-                if (iteratorOfGroupsOfNotes.hasCurrentGroupJustStarted()) {
+                if (hhAndSnIteratorOfGroupsOfNotes.hasCurrentGroupJustStarted()) {
                     return 'begin';
                 }
-                if (iteratorOfGroupsOfNotes.isCurrentGroupContainingTheLastItem()) {
+                if (hhAndSnIteratorOfGroupsOfNotes.isCurrentGroupContainingTheLastItem()) {
                     return 'end';
                 }
                 return 'continue';
@@ -69,17 +69,40 @@ export const createSheet = async ({topPattern, snarePattern, kickPattern}: ICrea
                 })
             );
         }
-        iteratorOfGroupsOfNotes.pickNextGroup();
+
+        hhAndSnIteratorOfGroupsOfNotes.pickNextGroup();
     }
 
     const kkNotesAndRests = extractNotesOrRests([kickPattern]);
+    const kkIteratorOfGroupsOfNotes = createIteratorUponGroupsOfNotes(buildGroupsOfNotes(kkNotesAndRests));
+    kkIteratorOfGroupsOfNotes.pickFirstGroupIfExists();
     for (const item of kkNotesAndRests) {
+
+        const grouping: undefined | 'begin' | 'continue' | 'end' = (() => {
+            if (item.num16 === 4) {
+                return undefined;
+            }
+            if (item.type === 'note') {
+                if (kkIteratorOfGroupsOfNotes.hasCurrentGroupJustStarted()) {
+                    return 'begin';
+                }
+                if (kkIteratorOfGroupsOfNotes.isCurrentGroupContainingTheLastItem()) {
+                    return 'end';
+                }
+                return 'continue';
+            }
+            return undefined;
+        })();
+
         xmlSecondVoiceNotes.push(
             createKickNote({
                 i8th: item.num16 / 2, // TODO: What if it was a 16th hit?
+                grouping,
                 rest: item.type === 'rest',
             })
         );
+
+        kkIteratorOfGroupsOfNotes.pickNextGroup();
     }
 
     // Fetch XML Template
@@ -154,6 +177,10 @@ const createSnareNoteMaybeBelowHH = (args: {
 
 const createKickNote = (args: {
     i8th: number;
+    grouping?:
+        'begin'
+        | 'continue'
+        | 'end';
     rest?: boolean;
 }) => createNote({
     note: {
@@ -163,6 +190,7 @@ const createKickNote = (args: {
     duration: args.i8th,
     instrument: 'kick',
     voice: 2,
+    grouping: args.grouping,
     rest: args.rest,
 })
 
