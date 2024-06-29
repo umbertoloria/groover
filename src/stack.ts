@@ -3,6 +3,7 @@ type MyStack<T> = {
     top: () => T | undefined;
     pop: () => T | undefined;
     push: (item: T) => void;
+    toList: () => T[];
 }
 export const createStack = <T>(): MyStack<T> => ({
     items: [] as T[],
@@ -22,5 +23,8 @@ export const createStack = <T>(): MyStack<T> => ({
     },
     push(item: T) {
         this.items.push(item);
+    },
+    toList() {
+        return this.items.map((item) => item);
     },
 });

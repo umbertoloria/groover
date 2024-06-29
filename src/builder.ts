@@ -3,46 +3,53 @@ import {extractNotesOrRests} from './extract-notes-or-rests.ts';
 export async function createSheet(): Promise<string> {
 
     const hhLayer: string = '< - - > < - - > ';
-    const snLayer: string = '  . o       o . ';
+    const snLayer: string = ' .  o.   .  o.  ';
     const kkLayer: string = 'o       o       ';
 
     // Generate XML Notes
     const xmlFirstVoiceNotes: string[] = [];
     const xmlSecondVoiceNotes: string[] = [];
 
-    const hhStack = extractNotesOrRests([hhLayer, snLayer]);
-    for (const item of hhStack.items) {
-        xmlFirstVoiceNotes.push(
-            createHHNote({
-                grouping: (() => {
-                    if (item.type === 'note') {
-                        const hhSymbol = item.symbols[0];
-                        if (hhSymbol === '<') {
-                            return 'begin';
-                        }
-                        if (hhSymbol === '-') {
-                            return 'continue';
-                        }
-                        if (hhSymbol === '>') {
-                            return 'end';
+    const hhNotesAndRests = extractNotesOrRests([hhLayer, snLayer]);
+    const initialHhStackLength = hhNotesAndRests.length;
+    for (const item of hhNotesAndRests) {
+        const hhSymbol = item.symbols[0];
+        const snSymbol = item.symbols[1];
+        if (hhSymbol !== ' ') {
+            xmlFirstVoiceNotes.push(
+                createHHNote({
+                    isHalfEighth: item.num16 === 1 ? true : undefined,
+                    grouping: (() => {
+                        if (item.type === 'note') {
+                            if (hhSymbol === '<') {
+                                return 'begin';
+                            }
+                            if (hhSymbol === '-') {
+                                return 'continue';
+                            }
+                            if (hhSymbol === '>') {
+                                return 'end';
+                            }
                         }
                         return undefined;
-                    }
-                    return undefined;
-                })(),
-                rest: item.type === 'rest',
-            })
-        );
-        if (item.symbols[1] !== ' ') {
+                    })(),
+                    rest: item.type === 'rest',
+                })
+            );
+        }
+        if (snSymbol !== ' ') {
             xmlFirstVoiceNotes.push(
-                createSnareNoteBelowHH({
-                    ghost: item.symbols[1] === '.',
+                createSnareNoteMaybeBelowHH({
+                    isBelowHH: hhSymbol !== ' ',
+                    ghost: snSymbol === '.',
+                    isHalfEighth: item.num16 === 1 ? true : undefined,
+                    groupContinue: true, // Assuming we're always below a HH group.
                 })
             );
         }
     }
-    const kkStack = extractNotesOrRests([kkLayer]);
-    for (const item of kkStack.items) {
+    const kkNotesAndRests = extractNotesOrRests([kkLayer]);
+    for (const item of kkNotesAndRests) {
         xmlSecondVoiceNotes.push(
             createKickNote({
                 i8th: item.num16 / 2, // TODO: What if it was a 16th hit?
@@ -59,7 +66,7 @@ export async function createSheet(): Promise<string> {
         xmlFirstVoiceNotes.join('\n')
         + `
         <backup>
-            <duration>8</duration>
+            <duration>${initialHhStackLength}</duration>
         </backup>
         `
         + xmlSecondVoiceNotes.join('\n')
@@ -71,6 +78,7 @@ export async function createSheet(): Promise<string> {
 
 // Note Template builders
 const createHHNote = (args: {
+    isHalfEighth?: boolean;
     grouping?:
         'begin'
         | 'continue'
@@ -82,7 +90,7 @@ const createHHNote = (args: {
             step: 'G',
             octave: 5,
         },
-        duration: 1,
+        duration: args.isHalfEighth ? 0.5 : 1,
         instrument: 'hh',
         voice: 1,
         grouping: args.grouping,
@@ -90,19 +98,23 @@ const createHHNote = (args: {
     });
 }
 
-const createSnareNoteBelowHH = (args: {
+const createSnareNoteMaybeBelowHH = (args: {
+    isBelowHH: boolean;
     ghost?: boolean;
+    isHalfEighth?: boolean;
+    groupContinue?: boolean;
 }) => createNote({
     note: {
         step: 'C',
         octave: 5,
     },
-    duration: 1,
+    duration: args.isHalfEighth ? 0.5 : 1,
     instrument: args.ghost
         ? 'snare-ghost'
         : 'snare',
     voice: 1,
-    chord: true,
+    grouping: args.groupContinue ? 'continue' : undefined,
+    chord: args.isBelowHH,
 });
 
 const createKickNote = (args: {
@@ -147,11 +159,14 @@ const createNote = (args: {
                 <display-step>${args.note.step}</display-step>
                 <display-octave>${args.note.octave}</display-octave>
             </unpitched>
-            <duration>${args.duration}</duration>
+            <duration>${args.duration < 1 ? 1 : args.duration /* Using min duration=1 */}</duration>
             <instrument id="${args.instrument}"/>
             <voice>${args.voice}</voice>
             <type>${
         (() => {
+            if (args.duration === 0.5) {
+                return '16th';
+            }
             if (args.duration === 1) {
                 return 'eighth';
             }

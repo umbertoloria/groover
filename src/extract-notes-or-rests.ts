@@ -43,5 +43,5 @@ export const extractNotesOrRests = (layers: string[]) => {
             }
         }
     }
-    return stack;
+    return stack.toList();
 };
