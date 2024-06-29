@@ -123,6 +123,8 @@ export const createSheet = async ({topPattern, snarePattern, kickPattern}: ICrea
         + xmlSecondVoiceNotes.join('\n')
     ;
 
+    console.log(xmlSecondVoiceNotes.join('\n'));
+
     return xmlTemplate.replace('<output/>', xmlOutput)
 }
 

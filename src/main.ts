@@ -1,5 +1,5 @@
 import './style.css'
-import {createSheet} from './builder.ts';
+import {createSheet, fetchDrumsFromPublic} from './builder.ts';
 import {TOP_PATTERN_HH_IX_X_X_X_X_X_X_X_} from './drums-patterns/top-patterns.ts';
 import {
     createSnarePattern,
@@ -38,7 +38,7 @@ const embedElementId = 'osmdCanvas';
 
 (async () => {
 
-    const xmlScore = await createSheet({
+    /*const xmlScore = await createSheet({
         topPattern: TOP_PATTERN_HH_IX_X_X_X_X_X_X_X_,
         snarePattern: createSnarePattern({
             a24: {
@@ -52,7 +52,8 @@ const embedElementId = 'osmdCanvas';
         }),
         kickPattern: KICK_PATTERN_24_IK_K_I____ + KICK_PATTERN_24_I____I_K_K
             + KICK_PATTERN_24_I_KK_I____ + KICK_PATTERN_24_I____I_KKK,
-    });
+    });*/
+    const xmlScore = await fetchDrumsFromPublic('prova.musicxml');
 
     // Render
     renderPlease(embedElementId, xmlScore);
