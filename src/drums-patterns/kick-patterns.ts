@@ -1,8 +1,14 @@
-export const KICK_PATTERN_24_IK___I____: string = 'o   ' as const;
 export const KICK_PATTERN_24_I____I____: string = '    ' as const;
+export const KICK_PATTERN_24_IK___I____: string = 'o   ' as const;
+export const KICK_PATTERN_24_I__K_I____: string = '  o ' as const;
 export const KICK_PATTERN_24_IK_K_I____: string = 'o o ' as const;
+export const KICK_PATTERN_24_I_KK_I____: string = ' oo ' as const;
+
 export const KICK_PATTERN_24_I____I_K__: string = ' o  ' as const;
+export const KICK_PATTERN_24_I____I__K_: string = '  o ' as const;
 export const KICK_PATTERN_24_I____I___K: string = '   o' as const;
+export const KICK_PATTERN_24_I____I_K_K: string = ' o o' as const;
+export const KICK_PATTERN_24_I____I_KKK: string = ' ooo' as const;
 
 export const createKickPatternFrom14BeatChaffeeBank = (chaffeeCount: number) => {
     if (chaffeeCount === 0) {

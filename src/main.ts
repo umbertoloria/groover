@@ -8,9 +8,9 @@ import {
     SNARE_PATTERN_24_GHOST_CHAFFEE_2,
 } from './drums-patterns/snare-patterns.ts';
 import {
-    KICK_PATTERN_24_I____I____,
-    KICK_PATTERN_24_I____I_K__,
-    KICK_PATTERN_24_IK___I____,
+    KICK_PATTERN_24_I____I_K_K,
+    KICK_PATTERN_24_I____I_KKK,
+    KICK_PATTERN_24_I_KK_I____,
     KICK_PATTERN_24_IK_K_I____,
 } from './drums-patterns/kick-patterns.ts';
 
@@ -50,8 +50,8 @@ const embedElementId = 'osmdCanvas';
                 ghost: SNARE_PATTERN_24_GHOST_CHAFFEE_1,
             },
         }),
-        kickPattern: KICK_PATTERN_24_IK___I____ + KICK_PATTERN_24_I____I____
-            + KICK_PATTERN_24_IK_K_I____ + KICK_PATTERN_24_I____I_K__,
+        kickPattern: KICK_PATTERN_24_IK_K_I____ + KICK_PATTERN_24_I____I_K_K
+            + KICK_PATTERN_24_I_KK_I____ + KICK_PATTERN_24_I____I_KKK,
     });
 
     // Render
