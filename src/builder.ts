@@ -1,6 +1,5 @@
-import {extractNotesOrRests} from './extract-notes-or-rests.ts';
-import {buildGroupsOfNotes, createIteratorUponGroupsOfNotes} from './groups-of-notes.ts';
-
+import {getNotesStacksList} from './notes-stack.ts';
+import {buildWindowsOf16ths, createIteratorUponWindowsOf16ths} from './window-of-16ths.ts';
 
 type ICreateSheet = {
     topPattern: string;
@@ -13,11 +12,11 @@ export const createSheet = async ({topPattern, snarePattern, kickPattern}: ICrea
     const xmlFirstVoiceNotes: string[] = [];
     const xmlSecondVoiceNotes: string[] = [];
 
-    const hhNotesAndRests = extractNotesOrRests([topPattern, snarePattern]);
+    const hhStacks = getNotesStacksList([topPattern, snarePattern]);
 
-    const hhAndSnIteratorOfGroupsOfNotes = createIteratorUponGroupsOfNotes(buildGroupsOfNotes(hhNotesAndRests));
-    hhAndSnIteratorOfGroupsOfNotes.pickFirstGroupIfExists();
-    for (const item of hhNotesAndRests) {
+    const hhAndSnWindowsOf16ths = createIteratorUponWindowsOf16ths(buildWindowsOf16ths(hhStacks));
+    hhAndSnWindowsOf16ths.pickFirstWindowIfExists();
+    for (const item of hhStacks) {
         const hhSymbol = item.symbols[0];
         const snSymbol = item.symbols[1];
 
@@ -26,10 +25,10 @@ export const createSheet = async ({topPattern, snarePattern, kickPattern}: ICrea
                 return undefined;
             }
             if (item.type === 'note') {
-                if (hhAndSnIteratorOfGroupsOfNotes.hasCurrentGroupJustStarted()) {
+                if (hhAndSnWindowsOf16ths.hasCurrentWindowJustStarted()) {
                     return 'begin';
                 }
-                if (hhAndSnIteratorOfGroupsOfNotes.isCurrentGroupContainingTheLastItem()) {
+                if (hhAndSnWindowsOf16ths.isCurrentWindowContainingTheLastItem()) {
                     return 'end';
                 }
                 return 'continue';
@@ -70,23 +69,23 @@ export const createSheet = async ({topPattern, snarePattern, kickPattern}: ICrea
             );
         }
 
-        hhAndSnIteratorOfGroupsOfNotes.pickNextGroup();
+        hhAndSnWindowsOf16ths.pickNextWindow();
     }
 
-    const kkNotesAndRests = extractNotesOrRests([kickPattern]);
-    const kkIteratorOfGroupsOfNotes = createIteratorUponGroupsOfNotes(buildGroupsOfNotes(kkNotesAndRests));
-    kkIteratorOfGroupsOfNotes.pickFirstGroupIfExists();
-    for (const item of kkNotesAndRests) {
+    const kkStacks = getNotesStacksList([kickPattern]);
+    const kkWindowsOf16ths = createIteratorUponWindowsOf16ths(buildWindowsOf16ths(kkStacks));
+    kkWindowsOf16ths.pickFirstWindowIfExists();
+    for (const item of kkStacks) {
 
         const grouping: undefined | 'begin' | 'continue' | 'end' = (() => {
             if (item.num16 === 4) {
                 return undefined;
             }
             if (item.type === 'note') {
-                if (kkIteratorOfGroupsOfNotes.hasCurrentGroupJustStarted()) {
+                if (kkWindowsOf16ths.hasCurrentWindowJustStarted()) {
                     return 'begin';
                 }
-                if (kkIteratorOfGroupsOfNotes.isCurrentGroupContainingTheLastItem()) {
+                if (kkWindowsOf16ths.isCurrentWindowContainingTheLastItem()) {
                     return 'end';
                 }
                 return 'continue';
@@ -102,7 +101,7 @@ export const createSheet = async ({topPattern, snarePattern, kickPattern}: ICrea
             })
         );
 
-        kkIteratorOfGroupsOfNotes.pickNextGroup();
+        kkWindowsOf16ths.pickNextWindow();
     }
 
     // Fetch XML Template
@@ -193,6 +192,7 @@ const createKickNote = (args: {
     grouping: args.grouping,
     rest: args.rest,
 })
+
 
 // Note generic builder
 const createNote = (args: {

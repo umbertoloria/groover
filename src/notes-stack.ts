@@ -1,21 +1,21 @@
 import {createStack} from './stack.ts';
 
-export type NoteOrRest = {
+export type NotesStack = {
     type: 'note' | 'rest';
     startedOnNum16: number;
     num16: number;
     symbols: string[];
 }
-export const extractNotesOrRests = (layers: string[]) => {
+export const getNotesStacksList = (layers: string[]) => {
     const layerLength = layers[0].length;
-    const stack = createStack<NoteOrRest>();
+    const stackOfStacks = createStack<NotesStack>();
     for (let i = 0; i < layerLength; ++i) {
         const symbols: string[] = layers.map((layer) => layer[i]);
         if (
             symbols.some((symbol) => symbol !== ' ')
         ) {
             // Note on at least one
-            stack.push({
+            stackOfStacks.push({
                 type: 'note',
                 startedOnNum16: i % 4,
                 num16: 1,
@@ -23,31 +23,31 @@ export const extractNotesOrRests = (layers: string[]) => {
             });
         } else {
             // Rest on all
-            const lastNoteOrRest = stack.top();
+            const notesStack = stackOfStacks.top();
             if (
-                lastNoteOrRest
+                notesStack
                 && (
                     (
                         // If it starts on the first 1/16 of a 1/4, expand (potentially) to fit the whole 1/4.
-                        lastNoteOrRest.startedOnNum16 === 0 && lastNoteOrRest.num16 < 4
+                        notesStack.startedOnNum16 === 0 && notesStack.num16 < 4
                     )
                     || (
                         // If it starts on the third 1/16 of a 1/4, expand (potentially) to fit the whole second 1/8.
-                        lastNoteOrRest.startedOnNum16 === 2 && lastNoteOrRest.num16 < 2
+                        notesStack.startedOnNum16 === 2 && notesStack.num16 < 2
                     )
                 )
             ) {
-                stack.pop();
-                stack.push({
-                    type: lastNoteOrRest.type === 'note'
+                stackOfStacks.pop();
+                stackOfStacks.push({
+                    type: notesStack.type === 'note'
                         ? 'note'
                         : 'rest',
-                    startedOnNum16: lastNoteOrRest.startedOnNum16,
-                    num16: lastNoteOrRest.num16 + 1,
-                    symbols: lastNoteOrRest.symbols,
+                    startedOnNum16: notesStack.startedOnNum16,
+                    num16: notesStack.num16 + 1,
+                    symbols: notesStack.symbols,
                 })
             } else {
-                stack.push({
+                stackOfStacks.push({
                     type: 'rest',
                     startedOnNum16: i % 4,
                     num16: 1,
@@ -56,5 +56,5 @@ export const extractNotesOrRests = (layers: string[]) => {
             }
         }
     }
-    return stack.toList();
+    return stackOfStacks.toList();
 };
