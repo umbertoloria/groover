@@ -9,7 +9,11 @@ const createEmptyWindowOf16ths = (): WindowOf16ths => ({
     num16ths: 0,
     countItems: 0,
 });
-export const buildWindowsOf16ths = (notesStacksList: NotesStack[]) => {
+export const buildWindowsOf16ths = (notesStacksList: NotesStack[], maxNumberOf8thsInAGroupIs2?: boolean) => {
+    let maxNumberOf16sInAGroup = 2 * 4;
+    if (maxNumberOf8thsInAGroupIs2) {
+        maxNumberOf16sInAGroup = 2 * 2;
+    }
     const windows: WindowOf16ths[] = [];
     for (const notesStack of notesStacksList) {
         if (notesStack.num16 > 2) {
@@ -30,7 +34,7 @@ export const buildWindowsOf16ths = (notesStacksList: NotesStack[]) => {
             windows.push(createEmptyWindowOf16ths());
         }
         lastGr = windows[windows.length - 1] as (WindowOf16ths & object); // Sure is not "undefined" now.
-        if (lastGr.num16ths >= 2 * 4) {
+        if (lastGr.num16ths >= maxNumberOf16sInAGroup) {
             windows.push(createEmptyWindowOf16ths());
         }
         lastGr = windows[windows.length - 1] as (WindowOf16ths & object); // Sure is not "undefined" now.
