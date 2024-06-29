@@ -1,9 +1,10 @@
 import {extractNotesOrRests} from './extract-notes-or-rests.ts';
+import {buildGroupsOfNotes, createIteratorUponGroupsOfNotes} from './groups-of-notes.ts';
 
 export async function createSheet(): Promise<string> {
 
-    const hhLayer: string = '< - - > < - - > ';
-    const snLayer: string = ' .  o.   .  o.  ';
+    const hhLayer: string = 'x x x x x x x x ';
+    const snLayer: string = ' .  o. . .  o. .';
     const kkLayer: string = 'o       o       ';
 
     // Generate XML Notes
@@ -11,28 +12,47 @@ export async function createSheet(): Promise<string> {
     const xmlSecondVoiceNotes: string[] = [];
 
     const hhNotesAndRests = extractNotesOrRests([hhLayer, snLayer]);
-    const initialHhStackLength = hhNotesAndRests.length;
+    const iteratorOfGroupsOfNotes = createIteratorUponGroupsOfNotes(buildGroupsOfNotes(hhNotesAndRests));
+    iteratorOfGroupsOfNotes.pickFirstGroupIfExists();
+
     for (const item of hhNotesAndRests) {
         const hhSymbol = item.symbols[0];
         const snSymbol = item.symbols[1];
+
+        const grouping: undefined | 'begin' | 'continue' | 'end' = (() => {
+            if (item.num16 === 4) {
+                return undefined;
+            }
+            if (item.type === 'note') {
+                if (iteratorOfGroupsOfNotes.hasCurrentGroupJustStarted()) {
+                    return 'begin';
+                }
+                if (iteratorOfGroupsOfNotes.isCurrentGroupContainingTheLastItem()) {
+                    return 'end';
+                }
+                return 'continue';
+            }
+            return undefined;
+        })();
+
         if (hhSymbol !== ' ') {
             xmlFirstVoiceNotes.push(
                 createHHNote({
-                    isHalfEighth: item.num16 === 1 ? true : undefined,
-                    grouping: (() => {
-                        if (item.type === 'note') {
-                            if (hhSymbol === '<') {
-                                return 'begin';
-                            }
-                            if (hhSymbol === '-') {
-                                return 'continue';
-                            }
-                            if (hhSymbol === '>') {
-                                return 'end';
-                            }
+                    durationNotEighth: (() => {
+                        if (item.num16 === 1) {
+                            return '16th';
                         }
+                        if (item.num16 === 2) {
+                            return undefined;
+                        }
+                        if (item.num16 === 4) {
+                            return 'quarter';
+                        }
+                        // TODO: Other durations in 16ths not supported.
+                        console.error('Other durations in 16ths not supported');
                         return undefined;
                     })(),
+                    grouping,
                     rest: item.type === 'rest',
                 })
             );
@@ -43,10 +63,11 @@ export async function createSheet(): Promise<string> {
                     isBelowHH: hhSymbol !== ' ',
                     ghost: snSymbol === '.',
                     isHalfEighth: item.num16 === 1 ? true : undefined,
-                    groupContinue: true, // Assuming we're always below a HH group.
+                    grouping,
                 })
             );
         }
+        iteratorOfGroupsOfNotes.pickNextGroup();
     }
     const kkNotesAndRests = extractNotesOrRests([kkLayer]);
     for (const item of kkNotesAndRests) {
@@ -66,7 +87,7 @@ export async function createSheet(): Promise<string> {
         xmlFirstVoiceNotes.join('\n')
         + `
         <backup>
-            <duration>${initialHhStackLength}</duration>
+            <duration>${4 * 4 /* High enough number of 1/8s */}</duration>
         </backup>
         `
         + xmlSecondVoiceNotes.join('\n')
@@ -78,7 +99,7 @@ export async function createSheet(): Promise<string> {
 
 // Note Template builders
 const createHHNote = (args: {
-    isHalfEighth?: boolean;
+    durationNotEighth?: '16th' | 'quarter';
     grouping?:
         'begin'
         | 'continue'
@@ -90,7 +111,15 @@ const createHHNote = (args: {
             step: 'G',
             octave: 5,
         },
-        duration: args.isHalfEighth ? 0.5 : 1,
+        duration: (() => {
+            if (args.durationNotEighth === '16th') {
+                return 0.5;
+            }
+            if (args.durationNotEighth === 'quarter') {
+                return 2;
+            }
+            return 1;
+        })(),
         instrument: 'hh',
         voice: 1,
         grouping: args.grouping,
@@ -102,7 +131,10 @@ const createSnareNoteMaybeBelowHH = (args: {
     isBelowHH: boolean;
     ghost?: boolean;
     isHalfEighth?: boolean;
-    groupContinue?: boolean;
+    grouping?:
+        'begin'
+        | 'continue'
+        | 'end';
 }) => createNote({
     note: {
         step: 'C',
@@ -113,7 +145,7 @@ const createSnareNoteMaybeBelowHH = (args: {
         ? 'snare-ghost'
         : 'snare',
     voice: 1,
-    grouping: args.groupContinue ? 'continue' : undefined,
+    grouping: args.grouping,
     chord: args.isBelowHH,
 });
 
@@ -170,6 +202,7 @@ const createNote = (args: {
             if (args.duration === 1) {
                 return 'eighth';
             }
+            // Other dimensions of 1/8s not supported.
             return 'quarter';
         })()}</type>
             <stem>${

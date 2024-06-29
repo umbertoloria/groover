@@ -1,6 +1,6 @@
 import {createStack} from './stack.ts';
 
-type NoteOrRest = {
+export type NoteOrRest = {
     type: 'note' | 'rest';
     num16: number;
     symbols: string[];
