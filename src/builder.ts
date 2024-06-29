@@ -3,61 +3,45 @@ import {extractNotesOrRests} from './extract-notes-or-rests.ts';
 export async function createSheet(): Promise<string> {
 
     const hhLayer: string = '< - - > < - - > ';
-    const snLayer: string = '    o       o   ';
+    const snLayer: string = '  . o       o . ';
     const kkLayer: string = 'o       o       ';
 
     // Generate XML Notes
     const xmlFirstVoiceNotes: string[] = [];
     const xmlSecondVoiceNotes: string[] = [];
 
-    const hhStack = extractNotesOrRests(hhLayer, snLayer, (symbol1, symbol2) => {
-        if (symbol1 === '<') {
-            return {
-                grouping: 'begin',
-                snare: symbol2,
-            };
-        }
-        if (symbol1 === '-') {
-            return {
-                grouping: 'continue',
-                snare: symbol2,
-            };
-        }
-        if (symbol1 === '>') {
-            return {
-                grouping: 'end',
-                snare: symbol2,
-            };
-        }
-        return undefined;
-    });
+    const hhStack = extractNotesOrRests([hhLayer, snLayer]);
     for (const item of hhStack.items) {
         xmlFirstVoiceNotes.push(
             createHHNote({
                 grouping: (() => {
                     if (item.type === 'note') {
-                        if (
-                            item.data?.grouping === 'begin'
-                            || item.data?.grouping === 'continue'
-                            || item.data?.grouping === 'end'
-                        ) {
-                            return item.data.grouping;
+                        const hhSymbol = item.symbols[0];
+                        if (hhSymbol === '<') {
+                            return 'begin';
                         }
+                        if (hhSymbol === '-') {
+                            return 'continue';
+                        }
+                        if (hhSymbol === '>') {
+                            return 'end';
+                        }
+                        return undefined;
                     }
                     return undefined;
                 })(),
                 rest: item.type === 'rest',
             })
         );
-        if (item.level2) {
+        if (item.symbols[1] !== ' ') {
             xmlFirstVoiceNotes.push(
                 createSnareNoteBelowHH({
-                    ghost: item.data?.snare === '.',
+                    ghost: item.symbols[1] === '.',
                 })
             );
         }
     }
-    const kkStack = extractNotesOrRests(kkLayer);
+    const kkStack = extractNotesOrRests([kkLayer]);
     for (const item of kkStack.items) {
         xmlSecondVoiceNotes.push(
             createKickNote({

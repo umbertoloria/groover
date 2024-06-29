@@ -1,58 +1,47 @@
 import {createStack} from './stack.ts';
 
-type NoteOrRest<T> = {
+type NoteOrRest = {
     type: 'note' | 'rest';
     num16: number;
-    level1: boolean;
-    level2: boolean;
-    data?: T;
+    symbols: string[];
 }
-export const extractNotesOrRests = <T>(layer: string, secondLayer?: string, onCreateNoteOrRest?: (symbol1: string, symbol2?: string) => T) => {
-    const kkStack = createStack<NoteOrRest<T>>();
-    for (let i = 0; i < layer.length; ++i) {
-        const symbol1 = layer[i];
-        const symbol2 = secondLayer ? secondLayer[i] : undefined;
+export const extractNotesOrRests = (layers: string[]) => {
+    const layerLength = layers[0].length;
+
+    const max16thsToGroup = 4;
+
+    const stack = createStack<NoteOrRest>();
+    for (let i = 0; i < layerLength; ++i) {
+        const symbols: string[] = layers.map((layer) => layer[i]);
         if (
-            symbol1 !== ' '
-            || (
-                symbol2 !== undefined && symbol2 !== ' '
-            )
+            symbols.some((symbol) => symbol !== ' ')
         ) {
             // Note on at least one
-            kkStack.push({
+            stack.push({
                 type: 'note',
                 num16: 1,
-                level1: symbol1 !== ' ',
-                level2: symbol2 !== undefined && symbol2 !== ' ',
-                data: !!onCreateNoteOrRest ? onCreateNoteOrRest(symbol1, symbol2) : undefined,
+                symbols,
             });
         } else {
             // Rest on all
-            const lastNoteOrRest = kkStack.top();
-            (() => {
-                if (lastNoteOrRest) {
-                    if (lastNoteOrRest.num16 < 4) {
-                        kkStack.pop();
-                        kkStack.push({
-                            type: lastNoteOrRest.type === 'note'
-                                ? 'note'
-                                : 'rest',
-                            level1: lastNoteOrRest.level1,
-                            level2: lastNoteOrRest.level2,
-                            num16: lastNoteOrRest.num16 + 1,
-                            data: lastNoteOrRest.data,
-                        })
-                        return;
-                    }
-                }
-                kkStack.push({
+            const lastNoteOrRest = stack.top();
+            if (lastNoteOrRest && lastNoteOrRest.num16 < max16thsToGroup) {
+                stack.pop();
+                stack.push({
+                    type: lastNoteOrRest.type === 'note'
+                        ? 'note'
+                        : 'rest',
+                    num16: lastNoteOrRest.num16 + 1,
+                    symbols: lastNoteOrRest.symbols,
+                })
+            } else {
+                stack.push({
                     type: 'rest',
                     num16: 1,
-                    level1: false,
-                    level2: false,
+                    symbols, // Here symbols will be all spaces.
                 });
-            })();
+            }
         }
     }
-    return kkStack;
+    return stack;
 };
