@@ -1,17 +1,19 @@
 import {extractNotesOrRests} from './extract-notes-or-rests.ts';
 import {buildGroupsOfNotes, createIteratorUponGroupsOfNotes} from './groups-of-notes.ts';
 
-export async function createSheet(): Promise<string> {
 
-    const hhLayer: string = 'x x x x x x x x ';
-    const snLayer: string = ' .  o. . .  o. .';
-    const kkLayer: string = 'o       o       ';
+type ICreateSheet = {
+    topPattern: string;
+    snarePattern: string;
+    kickPattern: string;
+}
+export const createSheet = async ({topPattern, snarePattern, kickPattern}: ICreateSheet): Promise<string> => {
 
     // Generate XML Notes
     const xmlFirstVoiceNotes: string[] = [];
     const xmlSecondVoiceNotes: string[] = [];
 
-    const hhNotesAndRests = extractNotesOrRests([hhLayer, snLayer]);
+    const hhNotesAndRests = extractNotesOrRests([topPattern, snarePattern]);
     const iteratorOfGroupsOfNotes = createIteratorUponGroupsOfNotes(buildGroupsOfNotes(hhNotesAndRests));
     iteratorOfGroupsOfNotes.pickFirstGroupIfExists();
 
@@ -69,7 +71,8 @@ export async function createSheet(): Promise<string> {
         }
         iteratorOfGroupsOfNotes.pickNextGroup();
     }
-    const kkNotesAndRests = extractNotesOrRests([kkLayer]);
+
+    const kkNotesAndRests = extractNotesOrRests([kickPattern]);
     for (const item of kkNotesAndRests) {
         xmlSecondVoiceNotes.push(
             createKickNote({
